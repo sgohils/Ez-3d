@@ -1,0 +1,46 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - CAD_SANDBOX_IMAGE=cadquery-sandbox
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    depends_on:
+      cadquery-sandbox:
+        condition: service_healthy
+    networks:
+      - cadgen
+    restart: unless-stopped
+
+  cadquery-sandbox:
+    build:
+      context: ./backend/sandbox
+      dockerfile: Dockerfile
+    image: cadquery-sandbox
+    environment:
+      - PYTHONUNBUFFERED=1
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /tmp:noexec,nosuid,size=64m
+    networks:
+      - cadgen
+    healthcheck:
+      test: ["CMD", "python", "-c", "import cadquery; print('ok')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+networks:
+  cadgen:
+    driver: bridge
