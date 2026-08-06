@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState, type ReactNode } from "react"
+import { useMemo, useRef, useState, Suspense, type ReactNode } from "react"
 import * as THREE from "three"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, Environment, Stats, Html } from "@react-three/drei"
@@ -182,63 +182,65 @@ export function CADViewport({
         gl={{ antialias: true, preserveDrawingBuffer: true, stencil: true }}
         className={className}
       >
-        <ViewportScene
-          lighting={lighting}
-          showGrid={showGrid}
-          showAxes={showAxes}
-          showStats={showStats}
-          showEnvironment={showEnvironment}
-          enableDamping={enableDamping}
-          autoRotate={autoRotate}
-          controlsRef={controlsRef}
-        >
-        {modelUrl || model ? (
-          <ModelLoader
-            ref={modelRef}
-            modelUrl={modelUrl}
-            model={model}
-            onLoaded={handleModelLoaded}
-            onProgress={onProgress}
-            onError={(err) => {
-              setError(err)
-              onError?.(err)
-            }}
-            onLoadStart={onLoadStart}
-          />
-        ) : null}
-        </ViewportScene>
-
-        {!modelUrl && !model ? (
-          <Html
-            center
-            style={{
-              color: "#9ca3af",
-              font: '13px/1.5 ui-sans, system-ui',
-              pointerEvents: "none",
-            }}
+        <Suspense fallback={null}>
+          <ViewportScene
+            lighting={lighting}
+            showGrid={showGrid}
+            showAxes={showAxes}
+            showStats={showStats}
+            showEnvironment={showEnvironment}
+            enableDamping={enableDamping}
+            autoRotate={autoRotate}
+            controlsRef={controlsRef}
           >
-            No model loaded. Send a prompt to generate a 3D model.
-          </Html>
-        ) : null}
+            {modelUrl || model ? (
+              <ModelLoader
+                ref={modelRef}
+                modelUrl={modelUrl}
+                model={model}
+                onLoaded={handleModelLoaded}
+                onProgress={onProgress}
+                onError={(err) => {
+                  setError(err)
+                  onError?.(err)
+                }}
+                onLoadStart={onLoadStart}
+              />
+            ) : null}
+          </ViewportScene>
 
-        <DisplayModeApplier
-          mode={mode}
-          overhangAngle={overhangAngleState}
-          modelRef={modelRef}
-          clipPlane={clippingPlane}
-          loadedToken={loadedToken}
-        />
+          {!modelUrl && !model ? (
+            <Html
+              center
+              style={{
+                color: "#9ca3af",
+                font: '13px/1.5 ui-sans, system-ui',
+                pointerEvents: "none",
+              }}
+            >
+              No model loaded. Send a prompt to generate a 3D model.
+            </Html>
+          ) : null}
 
-        {clippingEnabled && clippingPlane ? (
-          <ClippingPlane
-            normal={clipNormalState}
-            position={clipPositionState}
-            onChange={setClipPositionState}
-            visible={true}
+          <DisplayModeApplier
+            mode={mode}
+            overhangAngle={overhangAngleState}
+            modelRef={modelRef}
+            clipPlane={clippingPlane}
+            loadedToken={loadedToken}
           />
-        ) : null}
 
-        {children}
+          {clippingEnabled && clippingPlane ? (
+            <ClippingPlane
+              normal={clipNormalState}
+              position={clipPositionState}
+              onChange={setClipPositionState}
+              visible={true}
+            />
+          ) : null}
+
+          {children}
+        </Suspense>
       </Canvas>
 
       <div className="pointer-events-auto absolute top-4 left-4 z-10">

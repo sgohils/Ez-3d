@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   type FC,
-  type RefObject,
 } from "react"
 import * as THREE from "three"
 import { useThree } from "@react-three/fiber"
