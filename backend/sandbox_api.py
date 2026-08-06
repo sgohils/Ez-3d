@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import subprocess
 import tempfile
 import uuid
@@ -9,6 +10,8 @@ from typing import Any
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+
+from utils.cadquery_helpers import cleanup_old_sessions, inject_stl_tolerance
 
 logger = logging.getLogger(__name__)
 
@@ -53,17 +56,14 @@ def _run_script(code: str, output_dir: str) -> tuple[str, int]:
 async def execute_code(request: ExecuteRequest) -> ExecuteResponse:
     session_id = request.session_id or str(uuid.uuid4())
     outputs_dir = os.environ.get("CADGEN_OUTPUT_DIR", "/tmp/cadgen_outputs")
+    cleanup_old_sessions(outputs_dir)
     output_dir = os.path.join(outputs_dir, session_id)
     os.makedirs(output_dir, exist_ok=True)
 
     code = request.code
     if request.export_options:
         tolerance = request.export_options.get("stl_tolerance", 0.01)
-        import re
-
-        stl_pattern = r'cq\.exporters\.export\(result,\s*["\']output\.stl["\'](?:,\s*tolerance\s*=\s*[\d.]+)?\)'
-        stl_replacement = f'cq.exporters.export(result, "output.stl", tolerance={tolerance})'
-        code = re.sub(stl_pattern, stl_replacement, code)
+        code = inject_stl_tolerance(code, tolerance)
 
     try:
         logs, returncode = _run_script(code, output_dir)

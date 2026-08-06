@@ -53,6 +53,11 @@ services:
       - CADGEN_OUTPUT_DIR=/tmp/cadgen_outputs
     volumes:
       - cadgen_outputs:/tmp/cadgen_outputs
+    security_opt:
+      - "no-new-privileges"
+    cap_drop:
+      - ALL
+    user: "1000:1000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]

@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import subprocess
 import tempfile
 import uuid
 from typing import Any
+
+from utils.cadquery_helpers import inject_stl_tolerance
 
 logger = logging.getLogger(__name__)
 
@@ -83,12 +84,8 @@ class CadQuerySandbox:
             raise SandboxExecutionError("CadQuery script not found after execution", logs="")
 
     def _inject_export_options(self, code: str, export_options: dict[str, Any]) -> str:
-        result = code
         tolerance = export_options.get("stl_tolerance", 0.01)
-        stl_pattern = r'cq\.exporters\.export\(result,\s*["\']output\.stl["\'](?:,\s*tolerance\s*=\s*[\d.]+)?\)'
-        stl_replacement = f'cq.exporters.export(result, "output.stl", tolerance={tolerance})'
-        result = re.sub(stl_pattern, stl_replacement, result)
-        return result
+        return inject_stl_tolerance(code, tolerance)
 
     def _substitute_params(self, code: str, parameters: dict[str, Any]) -> str:
         result = code
