@@ -1,272 +1,103 @@
 "use client"
 
-import { useMemo, useRef, useState, Suspense, type ReactNode } from "react"
+import { Canvas, useLoader } from "@react-three/fiber"
+import { OrbitControls, Grid, Environment, ContactShadows, PerspectiveCamera } from "@react-three/drei"
+import { Suspense, useMemo } from "react"
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader"
+import { STLLoader } from "three/examples/jsm/loaders/STLLoader"
 import * as THREE from "three"
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Environment, Stats, Html } from "@react-three/drei"
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib"
-import { ModelLoader } from "./ModelLoader"
-import { DisplayModeApplier, DisplayModes } from "./DisplayModes"
-import { ClippingPlane } from "./ClippingPlane"
-import type { CADViewportProps, DisplayMode, LightingPreset } from "./types"
 
-function ViewportGrid({
-  size = 200,
-  divisions = 40,
-  visible = true,
-}: {
-  size?: number
-  divisions?: number
-  visible?: boolean
-}) {
-  const helper = useMemo(
-    () => new THREE.GridHelper(size, divisions, 0x6b7280, 0x1f2937),
-    [size, divisions],
+function SceneModel({ url, wireframe }: { url: string; wireframe?: boolean }) {
+  const ext = url.split(".").pop()?.toLowerCase()
+
+  if (ext === "gltf" || ext === "glb") {
+    const gltf = useLoader(GLTFLoader, url)
+    useMemo(() => {
+      gltf.scene.traverse((child: any) => {
+        if (child.isMesh && wireframe) {
+          child.material = new THREE.MeshBasicMaterial({ color: 0x3b82f6, wireframe: true })
+        }
+      })
+    }, [gltf, wireframe])
+    return <primitive object={gltf.scene} />
+  }
+
+  if (ext === "stl") {
+    const geometry = useLoader(STLLoader, url)
+    return (
+      <mesh geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} wireframe={wireframe}>
+        <meshStandardMaterial color="#6b7280" metalness={0.3} roughness={0.6} />
+      </mesh>
+    )
+  }
+
+  if (ext === "step" || ext === "stp") {
+    return null
+  }
+
+  return null
+}
+
+function Placeholder() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+      <circleGeometry args={[0.5, 64]} />
+      <meshBasicMaterial color="#374151" transparent opacity={0.5} />
+    </mesh>
   )
-  if (!visible) return null
-  return <primitive object={helper} />
-}
-ViewportGrid.displayName = "ViewportGrid"
-
-function ViewportAxes({ size = 100, visible = true }: { size?: number; visible?: boolean }) {
-  const helper = useMemo(() => new THREE.AxesHelper(size), [size])
-  if (!visible) return null
-  return <primitive object={helper} />
-}
-ViewportAxes.displayName = "ViewportAxes"
-
-interface ViewportSceneProps {
-  lighting: LightingPreset
-  showGrid: boolean
-  showAxes: boolean
-  showStats: boolean
-  showEnvironment: boolean
-  enableDamping: boolean
-  autoRotate: boolean
-  controlsRef: React.RefObject<OrbitControlsImpl>
-  children?: ReactNode
 }
 
-export function ViewportScene({
-  lighting,
-  showGrid,
-  showAxes,
-  showStats,
-  showEnvironment,
-  enableDamping,
-  autoRotate,
-  controlsRef,
-  children,
-}: ViewportSceneProps) {
+function SceneContent({ modelUrl, wireframe }: { modelUrl: string; wireframe?: boolean }) {
+  const ext = modelUrl.split(".").pop()?.toLowerCase()
+  const isStep = ext === "step" || ext === "stp"
+
+  if (!modelUrl || isStep) return <Placeholder />
+
   return (
     <>
-      <color attach="background" args={["#0f1117"]} />
-
-      {showEnvironment && lighting !== "none" ? (
-        <Environment preset={lighting} background={false} />
-      ) : (
-        <>
-          <ambientLight intensity={0.4} />
-          <directionalLight
-            position={[10, 20, 10]}
-            intensity={1.2}
-            castShadow
-            shadow-camera-far={200}
-            shadow-camera-left={-50}
-            shadow-camera-right={50}
-            shadow-camera-top={50}
-            shadow-camera-bottom={-50}
-            shadow-map-size-width={1024}
-            shadow-map-size-height={1024}
-          />
-        </>
-      )}
-
-      <OrbitControls
-        ref={controlsRef}
-        enableDamping={enableDamping}
-        autoRotate={autoRotate}
-        enablePan
-        enableZoom
-        enableRotate
-        makeDefault
-      />
-
-      <ViewportGrid visible={showGrid} />
-      <ViewportAxes visible={showAxes} />
-
-      {children}
-      {showStats && <Stats />}
+      <Grid args={[20, 20]} cellSize={0.5} cellThickness={0.5} cellColor="#374151" sectionSize={2} sectionThickness={1} sectionColor="#4b5563" fadeDistance={30} />
+      <Environment preset="city" />
+      <ContactShadows position={[0, -0.01, 0]} opacity={0.4} scale={20} blur={2} far={4} color="#1f2937" />
+      <ambientLight intensity={0.4} />
+      <directionalLight position={[5, 10, 5]} intensity={1} castShadow />
+      <SceneModel url={modelUrl} wireframe={wireframe} />
     </>
   )
 }
-ViewportScene.displayName = "ViewportScene"
 
-function fitCameraTo(controls: OrbitControlsImpl | null, object: THREE.Object3D) {
-  if (!controls) return
-  const camera = controls.object
-  const box = new THREE.Box3().setFromObject(object)
-  if (box.isEmpty()) return
-  const size = new THREE.Vector3()
-  box.getSize(size)
-  const center = new THREE.Vector3()
-  box.getCenter(center)
-
-  controls.target.copy(center)
-  const distance = Math.max(size.length(), 10) * 1.5
-  camera.position
-    .copy(center)
-    .add(new THREE.Vector3(0, 0, 1).multiplyScalar(distance))
-    .add(new THREE.Vector3(0, distance * 0.3, 0))
-  camera.near = Math.min(camera.near, Math.max(size.length() * 0.01, 0.1))
-  camera.far = Math.max(camera.far, size.length() * 4)
-  camera.updateProjectionMatrix()
-  controls.update()
+function LoadingFallback() {
+  return (
+    <mesh>
+      <sphereGeometry args={[0.5, 16, 16]} />
+      <meshNormalMaterial />
+    </mesh>
+  )
 }
 
-export function CADViewport({
-  modelUrl,
-  model,
-  displayMode = "shaded",
-  lighting = "warehouse",
-  showGrid = true,
-  showAxes = true,
-  showStats = false,
-  showEnvironment = true,
-  enableClipping = false,
-  overhangAngle = 45,
-  clipNormal = [0, 0, 1],
-  clipPosition = 0,
-  autoRotate = false,
-  enableDamping = true,
-  onModelLoaded,
-  onProgress,
-  onError,
-  onLoadStart,
-  className,
-  children,
-}: CADViewportProps) {
-  const [mode, setMode] = useState<DisplayMode>(displayMode)
-  const [overhangAngleState, setOverhangAngleState] = useState(overhangAngle)
-  const [clippingEnabled, setClippingEnabled] = useState(enableClipping)
-  const [clipNormalState, setClipNormalState] =
-    useState<[number, number, number]>(clipNormal)
-  const [clipPositionState, setClipPositionState] = useState(clipPosition)
-  const [error, setError] = useState<string | null>(null)
-  const [loadedToken, setLoadedToken] = useState(0)
-
-  const controlsRef = useRef<OrbitControlsImpl>(null!)
-  const modelRef = useRef<THREE.Group>(null!)
-
-  const handleModelLoaded = (object: THREE.Object3D) => {
-    onModelLoaded?.(object)
-    fitCameraTo(controlsRef.current, object)
-    setLoadedToken((t) => t + 1)
-  }
-
-  const clippingPlane = useMemo(
-    () =>
-      clippingEnabled
-        ? new THREE.Plane(
-            new THREE.Vector3(...clipNormalState).normalize(),
-            clipPositionState,
-          )
-        : null,
-    [clippingEnabled, clipNormalState, clipPositionState],
-  )
-
+export function CADViewport({ modelUrl, wireframe, autoRotate }: { modelUrl?: string; wireframe?: boolean; autoRotate?: boolean }) {
   return (
-    <div className="relative flex h-full w-full flex-col">
-      <Canvas
-        camera={{ position: [0, 0, 60], fov: 50, near: 0.1, far: 2000 }}
-        gl={{ antialias: true, preserveDrawingBuffer: true, stencil: true }}
-        className={className}
-      >
-        <Suspense fallback={null}>
-          <ViewportScene
-            lighting={lighting}
-            showGrid={showGrid}
-            showAxes={showAxes}
-            showStats={showStats}
-            showEnvironment={showEnvironment}
-            enableDamping={enableDamping}
-            autoRotate={autoRotate}
-            controlsRef={controlsRef}
-          >
-            {modelUrl || model ? (
-              <ModelLoader
-                ref={modelRef}
-                modelUrl={modelUrl}
-                model={model}
-                onLoaded={handleModelLoaded}
-                onProgress={onProgress}
-                onError={(err) => {
-                  setError(err)
-                  onError?.(err)
-                }}
-                onLoadStart={onLoadStart}
-              />
-            ) : null}
-          </ViewportScene>
-
-          {!modelUrl && !model ? (
-            <Html
-              center
-              style={{
-                color: "#9ca3af",
-                font: '13px/1.5 ui-sans, system-ui',
-                pointerEvents: "none",
-              }}
-            >
-              No model loaded. Send a prompt to generate a 3D model.
-            </Html>
-          ) : null}
-
-          <DisplayModeApplier
-            mode={mode}
-            overhangAngle={overhangAngleState}
-            modelRef={modelRef}
-            clipPlane={clippingPlane}
-            loadedToken={loadedToken}
-          />
-
-          {clippingEnabled && clippingPlane ? (
-            <ClippingPlane
-              normal={clipNormalState}
-              position={clipPositionState}
-              onChange={setClipPositionState}
-              visible={true}
-            />
-          ) : null}
-
-          {children}
+    <div className="w-full h-full relative">
+      <Canvas dpr={[1, 2]} shadows gl={{ preserveDrawingBuffer: true }}>
+        <PerspectiveCamera makeDefault position={[5, 5, 5]} fov={50} />
+        <Suspense fallback={<LoadingFallback />}>
+          <SceneContent modelUrl={modelUrl || ""} wireframe={wireframe} />
+          <OrbitControls autoRotate={autoRotate} autoRotateSpeed={1} makeDefault minDistance={1} maxDistance={50} />
         </Suspense>
       </Canvas>
 
-      <div className="pointer-events-auto absolute top-4 left-4 z-10">
-        <DisplayModes
-          mode={mode}
-          onModeChange={setMode}
-          overhangAngle={overhangAngleState}
-          onOverhangAngleChange={setOverhangAngleState}
-          clippingEnabled={clippingEnabled}
-          onClippingChange={setClippingEnabled}
-          clipPosition={clipPositionState}
-          onClipPositionChange={setClipPositionState}
-          clipNormal={clipNormalState}
-          onClipNormalChange={setClipNormalState}
-        />
-      </div>
-
-      {error ? (
-        <div
-          className="pointer-events-auto absolute bottom-4 left-1/2 -translate-x-1/2 z-10 rounded-lg
-            bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm text-red-300"
-        >
-          {error}
+      {modelUrl && (modelUrl.endsWith(".step") || modelUrl.endsWith(".stp")) && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="bg-yellow-900/80 text-yellow-100 px-4 py-2 rounded-lg text-sm backdrop-blur-sm">
+            STEP files require conversion to GLTF/STL before rendering. Please upload a converted format.
+          </div>
         </div>
-      ) : null}
+      )}
+
+      {!modelUrl && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <p className="text-gray-500 text-lg font-medium select-none">No model loaded — send a prompt to generate</p>
+        </div>
+      )}
     </div>
   )
 }
-CADViewport.displayName = "CADViewport"
