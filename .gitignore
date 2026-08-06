@@ -17,6 +17,7 @@ npm-debug.log*
 .env.local
 .env.development
 .env.test
+.env.example
 
 # IDE
 .idea
