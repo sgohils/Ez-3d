@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useCallback } from "react"
+import { apiService } from "@/lib/api/client"
+import { type GenerateResult } from "@/hooks/useApi"
 import { MessageList } from "./MessageList"
 import { PromptInput } from "./PromptInput"
 import { RevisionHistory } from "./RevisionHistory"
@@ -81,18 +83,66 @@ export function ChatSidebar({
   onClearRevisions,
 }: ChatSidebarProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages)
+  const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<"chat" | "revisions" | "autofix">("chat")
 
   const handleSend = useCallback(
-    (prompt: string) => {
+    async (prompt: string) => {
       const userMessage: Message = {
         id: `msg-${Date.now()}-user`,
         role: "user",
         content: prompt,
         timestamp: new Date(),
       }
-      setMessages((prev) => [...prev, userMessage])
-      onSendPrompt?.(prompt)
+
+      const loadingMessage: Message = {
+        id: `msg-${Date.now()}-loading`,
+        role: "system",
+        content: "Generating model...",
+        timestamp: new Date(),
+      }
+
+      setMessages((prev) => [...prev, userMessage, loadingMessage])
+      setIsLoading(true)
+
+      try {
+        const result: GenerateResult = await apiService.generate(prompt)
+        setMessages((prev) => {
+          const withoutLoading = prev.filter((m) => m.id !== loadingMessage.id)
+          const assistantMessage: Message = {
+            id: `msg-${Date.now()}-assistant`,
+            role: "assistant",
+            content: `Generated model based on: "${prompt}"`,
+            timestamp: new Date(),
+            codePreview: result.code,
+            modelInfo: {
+              step_url: result.step_url,
+              stl_url: result.stl_url,
+              gltf_url: result.gltf_url,
+              parameters: result.parameters,
+              code: result.code,
+              logs: result.logs,
+            },
+          }
+          return [...withoutLoading, assistantMessage]
+        })
+        onSendPrompt?.(prompt)
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error"
+        const detail = err && typeof err === "object" && "detail" in err ? String(err.detail) : ""
+        setMessages((prev) => {
+          const withoutLoading = prev.filter((m) => m.id !== loadingMessage.id)
+          const systemMessage: Message = {
+            id: `msg-${Date.now()}-error`,
+            role: "system",
+            content: `Generation failed: ${errorMessage}${detail ? `\n${detail}` : ""}`,
+            timestamp: new Date(),
+          }
+          return [...withoutLoading, systemMessage]
+        })
+      } finally {
+        setIsLoading(false)
+      }
     },
     [onSendPrompt],
   )
@@ -148,11 +198,11 @@ export function ChatSidebar({
 
       {activeTab === "chat" && (
         <>
-          <MessageList messages={messages} />
+          <MessageList messages={messages} isLoading={isLoading} />
           <PromptInput
             onSend={handleSend}
             presets={presets}
-            isLoading={autoFixState.status === "running"}
+            isLoading={isLoading || autoFixState.status === "running"}
           />
         </>
       )}

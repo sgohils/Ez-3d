@@ -1,5 +1,14 @@
 export type MessageRole = "user" | "assistant" | "system"
 
+export interface GenerateModelInfo {
+  step_url: string
+  stl_url: string
+  gltf_url: string
+  parameters: Array<{ name: string; value: number; min: number; max: number; step: number }>
+  code: string
+  logs: string
+}
+
 export interface Message {
   id: string
   role: MessageRole
@@ -7,6 +16,7 @@ export interface Message {
   timestamp: Date
   imageUrl?: string
   codePreview?: string
+  modelInfo?: GenerateModelInfo
 }
 
 export interface PromptPreset {
