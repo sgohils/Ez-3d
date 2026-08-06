@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { AppProvider, useApp } from "@/contexts/AppContext"
+import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary"
 import { ChatSidebar } from "@/components/chat/ChatSidebar"
 import { ParametricPanel } from "@/components/controls/ParametricPanel"
 import { CodeDrawer } from "@/components/editor/CodeDrawer"
@@ -227,8 +228,10 @@ function AppLayout() {
 
 export default function Page() {
   return (
-    <AppProvider>
-      <AppLayout />
-    </AppProvider>
+    <GlobalErrorBoundary>
+      <AppProvider>
+        <AppLayout />
+      </AppProvider>
+    </GlobalErrorBoundary>
   )
 }

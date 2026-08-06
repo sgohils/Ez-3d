@@ -119,9 +119,9 @@ export function AppProvider({ children }: AppProviderProps) {
 
       setState((prev) => ({
         ...prev,
-        modelUrl: result.modelUrl,
+        modelUrl: result.gltf_url,
         code: result.code,
-        parameters: result.parameters,
+        parameters: result.parameters.reduce((acc, p) => ({ ...acc, [p.name]: p.value }), {} as Record<string, number>),
         variables: extractVariablesFromCode(result.code),
         chatHistory: [...prev.chatHistory, assistantMessage],
         revisions: result.revisionId
@@ -130,9 +130,9 @@ export function AppProvider({ children }: AppProviderProps) {
               {
                 id: result.revisionId,
                 prompt,
-                modelName: result.modelUrl.split("/").pop() || "model",
+                modelName: result.gltf_url.split("/").pop() || "model",
                 timestamp: new Date(),
-                parameters: result.parameters,
+                parameters: result.parameters.reduce((acc, p) => ({ ...acc, [p.name]: p.value }), {} as Record<string, number>),
               },
             ]
           : prev.revisions,
@@ -173,9 +173,9 @@ export function AppProvider({ children }: AppProviderProps) {
 
       setState((prev) => ({
         ...prev,
-        modelUrl: result.modelUrl,
+        modelUrl: result.gltf_url,
         code: result.code,
-        parameters: result.parameters,
+        parameters: result.parameters.reduce((acc, p) => ({ ...acc, [p.name]: p.value }), {} as Record<string, number>),
         variables: extractVariablesFromCode(result.code),
       }))
     } catch (err) {

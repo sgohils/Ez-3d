@@ -16,6 +16,7 @@ class ExportPipeline:
         session_id: str,
         format: str,
         parameter_overrides: dict[str, Any] | None = None,
+        tolerance: float = 0.01,
     ) -> dict[str, Any]:
         self._logger.info("Exporting session %s as %s", session_id, format)
 
@@ -34,7 +35,16 @@ class ExportPipeline:
 
         from backend.services.cadquery_sandbox import CadQuerySandbox
         sandbox = CadQuerySandbox()
-        result = sandbox.execute(code, parameter_overrides, session_id=session_id or session.session_id)
+        export_options: dict[str, Any] = {}
+        if format == "stl":
+            export_options["stl_tolerance"] = tolerance
+
+        result = sandbox.execute(
+            code,
+            parameter_overrides,
+            session_id=session_id or session.session_id,
+            export_options=export_options,
+        )
 
         ext_map = {
             "step": (".step", "application/step"),

@@ -64,8 +64,11 @@ result = (
 )
 
 # Export artifacts
+# STEP: OpenCASCADE STEP export (AP242 compliant by default in CadQuery >=2.4)
 cq.exporters.export(result, "output.step")
+# STL: binary export with configurable tolerance (injected by sandbox)
 cq.exporters.export(result, "output.stl")
+# GLTF: glTF 2.0 export for Three.js compatibility
 cq.exporters.export(result, "output.gltf")
 '''
         return script

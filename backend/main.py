@@ -9,9 +9,14 @@ from api.v1.router import router as v1_router
 
 app = FastAPI(title="CADGen AI Backend", version="0.1.0")
 
+cors_origins = os.environ.get(
+    "CORS_ORIGINS",
+    "http://localhost:3000",
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

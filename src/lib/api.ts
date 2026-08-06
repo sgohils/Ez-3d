@@ -1,18 +1,32 @@
 import { APIError } from "@/lib/types"
 import { ApiService } from "./api/client"
 
+export interface ParameterSchema {
+  name: string
+  value: number
+  min: number
+  max: number
+  step: number
+}
+
 export interface GenerateResponse {
-  modelUrl: string
+  gltf_url: string
+  stl_url: string
+  step_url: string
+  parameters: ParameterSchema[]
   code: string
-  parameters: Record<string, number>
-  message: string
+  logs: string
+  message?: string
   revisionId?: string
 }
 
 export interface RecompileResponse {
-  modelUrl: string
+  gltf_url: string
+  stl_url: string
+  step_url: string
+  parameters: ParameterSchema[]
   code: string
-  parameters: Record<string, number>
+  logs: string
 }
 
 class AppApiService extends ApiService {
@@ -24,8 +38,13 @@ class AppApiService extends ApiService {
     return this.request("/api/v1/recompile", "POST", { parameters })
   }
 
-  async exportModel(format: "step" | "stl" | "gltf"): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/v1/export?format=${format}`)
+  async exportModel(format: "step" | "stl" | "gltf", tolerance?: number): Promise<Blob> {
+    const url = new URL(`${this.baseUrl}/api/v1/export`)
+    url.searchParams.set("format", format)
+    if (tolerance !== undefined) {
+      url.searchParams.set("tolerance", String(tolerance))
+    }
+    const response = await fetch(url.toString())
     if (!response.ok) {
       const text = await response.text().catch(() => "Export failed")
       throw new APIError("Export failed", response.status, text)
