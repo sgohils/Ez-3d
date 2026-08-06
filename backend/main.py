@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-outputs_dir = os.environ.get("CADGEN_OUTPUT_DIR", "/tmp/cadgen_outputs")
+outputs_dir = os.path.realpath(os.environ.get("CADGEN_OUTPUT_DIR", "/tmp/cadgen_outputs"))
 os.makedirs(outputs_dir, exist_ok=True)
 app.mount("/outputs", StaticFiles(directory=outputs_dir), name="outputs")
 
