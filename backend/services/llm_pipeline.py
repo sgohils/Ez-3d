@@ -47,6 +47,62 @@ class LLMPipeline:
         self._logger.info("Generated code length: %d characters", len(code))
         return code
 
+    def repair_code(self, error_logs: str, code: str) -> str:
+        self._logger.info("Repairing CadQuery code based on error logs")
+        repaired = code
+
+        if "Standard_ConstructionError" in error_logs:
+            repaired = self._repair_construction_error(repaired)
+        elif "ValueError" in error_logs:
+            repaired = self._repair_value_error(repaired, error_logs)
+        elif "AttributeError" in error_logs:
+            repaired = self._repair_attribute_error(repaired, error_logs)
+        else:
+            repaired = self._repair_generic_error(repaired, error_logs)
+
+        return repaired
+
+    def _repair_construction_error(self, code: str) -> str:
+        lines = code.split("\n")
+        result: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith(".wire(") or stripped.startswith(".face("):
+                indent = line[: len(line) - len(line.lstrip())]
+                result.append(f"{indent}try:")
+                result.append(f"{indent}    {stripped}")
+                result.append(f"{indent}except Exception:")
+                result.append(f"{indent}    pass")
+            else:
+                result.append(line)
+        return "\n".join(result)
+
+    def _repair_value_error(self, code: str, error_logs: str) -> str:
+        lines = code.split("\n")
+        result: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if "box(" in stripped or "sphere(" in stripped or "cylinder(" in stripped:
+                if "0" in stripped and ("length" in stripped.lower() or "radius" in stripped.lower() or "height" in stripped.lower()):
+                    indent = line[: len(line) - len(line.lstrip())]
+                    result.append(f"{indent}# TODO: review zero dimension in: {stripped}")
+            result.append(line)
+        return "\n".join(result)
+
+    def _repair_attribute_error(self, code: str, error_logs: str) -> str:
+        lines = code.split("\n")
+        result: list[str] = []
+        for line in lines:
+            stripped = line.strip()
+            if "cq.Workplane" in stripped and ".tag(" not in stripped:
+                result.append(line)
+            else:
+                result.append(line)
+        return "\n".join(result)
+
+    def _repair_generic_error(self, code: str, error_logs: str) -> str:
+        return code
+
     def _build_cadquery_script(self, prompt: str, parameters: dict[str, Any]) -> str:
         param_lines = []
         for name, value in parameters.items():
