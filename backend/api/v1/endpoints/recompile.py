@@ -49,9 +49,9 @@ async def recompile(request: RecompileRequest, http_request: Request) -> Recompi
         session.parameter_schemas = [p.model_dump() for p in param_schemas]
 
         base_url = str(http_request.base_url).rstrip("/")
-        session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if result.get("step_path") and os.path.exists(result.get("step_path", "")) else ""
-        session.stl_url = f"{base_url}/outputs/{session.session_id}/output.stl" if result.get("stl_path") and os.path.exists(result.get("stl_path", "")) else ""
-        session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if result.get("gltf_path") and os.path.exists(result.get("gltf_path", "")) else ""
+        session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if os.path.exists(result.get("step_path", "")) else ""
+        session.stl_url = f"{base_url}/outputs/{session.session_id}/output.stl" if os.path.exists(result.get("stl_path", "")) else ""
+        session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if os.path.exists(result.get("gltf_path", "")) else ""
         session.logs = result.get("logs", "")
 
         return RecompileResponse(

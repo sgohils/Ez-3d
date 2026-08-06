@@ -38,6 +38,12 @@ class SessionManager:
         return cls._sessions.get(session_id)
 
     @classmethod
+    def delete(cls, session_id: str) -> None:
+        cls._sessions.pop(session_id, None)
+        if cls._last_session and cls._last_session.session_id == session_id:
+            cls._last_session = None
+
+    @classmethod
     def update_last(cls, **kwargs: Any) -> GenerationSession:
         session = cls._last_session
         if session is None:

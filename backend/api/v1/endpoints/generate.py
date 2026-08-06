@@ -17,6 +17,7 @@ router = APIRouter(prefix="/generate", tags=["generate"])
 
 @router.post("/", response_model=GenerateResponse)
 async def generate(request: GenerateRequest, http_request: Request) -> GenerateResponse:
+    session = None
     try:
         llm = LLMPipeline()
         code = llm.generate_code(request.prompt, request.parameters)
@@ -43,9 +44,9 @@ async def generate(request: GenerateRequest, http_request: Request) -> GenerateR
         result = sandbox.execute(code, request.parameters or {}, session_id=session.session_id)
 
         base_url = str(http_request.base_url).rstrip("/")
-        session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if result.get("step_path") and os.path.exists(result.get("step_path", "")) else ""
-        session.stl_url = f"{base_url}/outputs/{session.session_id}/output.stl" if result.get("stl_path") and os.path.exists(result.get("stl_path", "")) else ""
-        session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if result.get("gltf_path") and os.path.exists(result.get("gltf_path", "")) else ""
+        session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if os.path.exists(result.get("step_path", "")) else ""
+        session.stl_url = f"{base_url}/outputs/{session.session_id}/output.stl" if os.path.exists(result.get("stl_path", "")) else ""
+        session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if os.path.exists(result.get("gltf_path", "")) else ""
         session.logs = result.get("logs", "")
 
         return GenerateResponse(
@@ -57,6 +58,8 @@ async def generate(request: GenerateRequest, http_request: Request) -> GenerateR
             logs=result.get("logs", ""),
         )
     except SandboxExecutionError as exc:
+        if session is not None:
+            SessionManager.delete(session.session_id)
         logger.error("Sandbox execution failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
@@ -67,6 +70,8 @@ async def generate(request: GenerateRequest, http_request: Request) -> GenerateR
             },
         )
     except Exception as exc:
+        if session is not None:
+            SessionManager.delete(session.session_id)
         logger.error("Generation failed: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
