@@ -17,6 +17,8 @@ class GenerateResponse(BaseModel):
     parameters: list[ParameterSchema]
     code: str
     logs: str
+    message: Optional[str] = None
+    revision_id: Optional[str] = Field(None, alias="revisionId")
 
 
 class ParameterSchema(BaseModel):
