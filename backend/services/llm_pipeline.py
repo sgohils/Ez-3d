@@ -64,12 +64,8 @@ result = (
 )
 
 # Export artifacts
-step_path = "/tmp/output.step"
-stl_path = "/tmp/output.stl"
-gltf_path = "/tmp/output.gltf"
-
-cq.exporters.export(result, step_path)
-cq.exporters.export(result, stl_path)
-cq.exporters.export(result, gltf_path)
+cq.exporters.export(result, "output.step")
+cq.exporters.export(result, "output.stl")
+cq.exporters.export(result, "output.gltf")
 '''
         return script

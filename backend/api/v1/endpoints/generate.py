@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from backend.models.schemas import GenerateRequest, GenerateResponse, ParameterSchema
 from backend.services.llm_pipeline import LLMPipeline, extract_parameters
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/generate", tags=["generate"])
 
 
 @router.post("/", response_model=GenerateResponse)
-async def generate(request: GenerateRequest) -> GenerateResponse:
+async def generate(request: GenerateRequest, http_request: Request) -> GenerateResponse:
     try:
         llm = LLMPipeline()
         code = llm.generate_code(request.prompt, request.parameters)
@@ -32,17 +33,19 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
                 ))
 
         sandbox = CadQuerySandbox()
-        result = sandbox.execute(code, request.parameters or {})
-
         session = SessionManager.create(
             prompt=request.prompt,
             code=code,
         )
         session.parameters = request.parameters or {}
         session.parameter_schemas = param_schemas
-        session.step_url = result.get("step_path", "")
-        session.stl_url = result.get("stl_path", "")
-        session.gltf_url = result.get("gltf_path", "")
+
+        result = sandbox.execute(code, request.parameters or {}, session_id=session.session_id)
+
+        base_url = str(http_request.base_url).rstrip("/")
+        session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if result.get("step_path") and os.path.exists(result.get("step_path", "")) else ""
+        session.stl_url = f"{base_url}/outputs/{session.session_id}/output.stl" if result.get("stl_path") and os.path.exists(result.get("stl_path", "")) else ""
+        session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if result.get("gltf_path") and os.path.exists(result.get("gltf_path", "")) else ""
         session.logs = result.get("logs", "")
 
         return GenerateResponse(

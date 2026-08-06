@@ -34,7 +34,7 @@ class ExportPipeline:
 
         from backend.services.cadquery_sandbox import CadQuerySandbox
         sandbox = CadQuerySandbox()
-        result = sandbox.execute(code, parameter_overrides)
+        result = sandbox.execute(code, parameter_overrides, session_id=session_id or session.session_id)
 
         ext_map = {
             "step": (".step", "application/step"),
