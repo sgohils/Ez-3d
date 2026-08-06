@@ -10,6 +10,14 @@ class GenerateRequest(BaseModel):
     parameters: Optional[dict[str, Any]] = None
 
 
+class ParameterSchema(BaseModel):
+    name: str
+    value: float
+    min: float
+    max: float
+    step: float
+
+
 class GenerateResponse(BaseModel):
     step_url: str
     stl_url: str
@@ -17,14 +25,7 @@ class GenerateResponse(BaseModel):
     parameters: list[ParameterSchema]
     code: str
     logs: str
-
-
-class ParameterSchema(BaseModel):
-    name: str
-    value: float
-    min: float
-    max: float
-    step: float
+    revision_id: str
 
 
 class RecompileRequest(BaseModel):
@@ -38,6 +39,7 @@ class RecompileResponse(BaseModel):
     parameters: list[ParameterSchema]
     code: str
     logs: str
+    revision_id: str
 
 
 class ExportRequest(BaseModel):

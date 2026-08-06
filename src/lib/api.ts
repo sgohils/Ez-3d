@@ -16,8 +16,7 @@ export interface GenerateResponse {
   parameters: ParameterSchema[]
   code: string
   logs: string
-  message?: string
-  revisionId?: string
+  revision_id: string
 }
 
 export interface RecompileResponse {
@@ -27,24 +26,25 @@ export interface RecompileResponse {
   parameters: ParameterSchema[]
   code: string
   logs: string
+  revision_id: string
 }
 
 class AppApiService extends ApiService {
   async generate(prompt: string, parameters?: Record<string, unknown>): Promise<GenerateResponse> {
-    return this.request("/api/v1/generate", "POST", { prompt, parameters })
+    return this.request<GenerateResponse>("/api/v1/generate", "POST", { prompt, parameters })
   }
 
   async recompile(parameters: Record<string, number>): Promise<RecompileResponse> {
-    return this.request("/api/v1/recompile", "POST", { parameters })
+    return this.request<RecompileResponse>("/api/v1/recompile", "POST", { parameters })
   }
 
   async exportModel(format: "step" | "stl" | "gltf", tolerance?: number): Promise<Blob> {
-    const url = new URL(`${this.baseUrl}/api/v1/export`)
-    url.searchParams.set("format", format)
+    const params = new URLSearchParams()
+    params.set("format", format)
     if (tolerance !== undefined) {
-      url.searchParams.set("tolerance", String(tolerance))
+      params.set("tolerance", String(tolerance))
     }
-    const response = await fetch(url.toString())
+    const response = await fetch(`${this.baseUrl}/api/v1/export?${params}`)
     if (!response.ok) {
       const text = await response.text().catch(() => "Export failed")
       throw new APIError("Export failed", response.status, text)

@@ -16,14 +16,16 @@ export class ApiService {
   }
 
   async exportModel(format: "step" | "stl" | "gltf"): Promise<Blob> {
-    const response = await fetch(`${this.baseUrl}/api/v1/export?format=${format}`)
+    const params = new URLSearchParams()
+    params.set("format", format)
+    const response = await fetch(`${this.baseUrl}/api/v1/export?${params}`)
     if (!response.ok) {
       throw new APIError("Export failed", response.status)
     }
     return response.blob()
   }
 
-  protected async request(path: string, method: string, body?: any): Promise<any> {
+  protected async request<T>(path: string, method: string, body?: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: { "Content-Type": "application/json" },

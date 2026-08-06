@@ -61,6 +61,7 @@ async def recompile(request: RecompileRequest, http_request: Request) -> Recompi
             parameters=param_schemas,
             code=code,
             logs=result.get("logs", ""),
+            revision_id=session.session_id,
         )
     except SandboxExecutionError as exc:
         logger.error("Recompilation failed: %s", exc, exc_info=True)

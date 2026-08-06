@@ -112,7 +112,7 @@ export function AppProvider({ children }: AppProviderProps) {
       const assistantMessage: Message = {
         id: `msg-${Date.now()}-assistant`,
         role: "assistant",
-        content: result.message || `Generated model: ${prompt}`,
+        content: `Generated model: ${prompt}`,
         timestamp: new Date(),
         codePreview: result.code.slice(0, 500) + (result.code.length > 500 ? "..." : ""),
       }
@@ -124,11 +124,11 @@ export function AppProvider({ children }: AppProviderProps) {
         parameters: result.parameters.reduce((acc, p) => ({ ...acc, [p.name]: p.value }), {} as Record<string, number>),
         variables: extractVariablesFromCode(result.code),
         chatHistory: [...prev.chatHistory, assistantMessage],
-        revisions: result.revisionId
+        revisions: result.revision_id
           ? [
               ...prev.revisions,
               {
-                id: result.revisionId,
+                id: result.revision_id,
                 prompt,
                 modelName: result.gltf_url.split("/").pop() || "model",
                 timestamp: new Date(),
