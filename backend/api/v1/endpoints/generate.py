@@ -55,6 +55,8 @@ async def generate(request: GenerateRequest, http_request: Request) -> GenerateR
             parameters=param_schemas,
             code=code,
             logs=result.get("logs", ""),
+            message=f"Generated model: {request.prompt}",
+            revision_id=session.session_id,
         )
     except SandboxExecutionError as exc:
         logger.error("Sandbox execution failed: %s", exc, exc_info=True)
