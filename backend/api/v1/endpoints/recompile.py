@@ -2,17 +2,24 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Callable
 
 from fastapi import APIRouter, HTTPException, Request
 
 from backend.models.schemas import RecompileRequest, RecompileResponse, ParameterSchema
-from backend.services.llm_pipeline import substitute_parameters
+from backend.services.llm_pipeline import LLMPipeline, substitute_parameters
 from backend.services.cadquery_sandbox import CadQuerySandbox, SandboxExecutionError
 from backend.services.session import SessionManager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/recompile", tags=["recompile"])
+
+
+def _make_on_error_callback(llm: LLMPipeline) -> Callable[[str, str], str]:
+    def on_error(error_logs: str, code: str) -> str:
+        return llm.repair_code(error_logs, code)
+    return on_error
 
 
 @router.post("/", response_model=RecompileResponse)
@@ -29,6 +36,7 @@ async def recompile(request: RecompileRequest, http_request: Request) -> Recompi
                 },
             )
 
+        llm = LLMPipeline()
         code = substitute_parameters(session.code, request.parameters)
 
         param_schemas: list[ParameterSchema] = []
@@ -42,7 +50,14 @@ async def recompile(request: RecompileRequest, http_request: Request) -> Recompi
             ))
 
         sandbox = CadQuerySandbox()
-        result = sandbox.execute(code, request.parameters, session_id=session.session_id)
+        on_error = _make_on_error_callback(llm)
+        result = sandbox.execute(
+            code,
+            request.parameters,
+            session_id=session.session_id,
+            on_error=on_error,
+            max_retries=3,
+        )
 
         session.code = code
         session.parameters = request.parameters
@@ -54,13 +69,17 @@ async def recompile(request: RecompileRequest, http_request: Request) -> Recompi
         session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if result.get("gltf_path") and os.path.exists(result.get("gltf_path", "")) else ""
         session.logs = result.get("logs", "")
 
+        retry_count = result.get("retry_count", 0)
+        if retry_count > 0:
+            session.logs = f"[Auto-fix retries: {retry_count}]\n{session.logs}"
+
         return RecompileResponse(
             step_url=session.step_url,
             stl_url=session.stl_url,
             gltf_url=session.gltf_url,
             parameters=param_schemas,
             code=code,
-            logs=result.get("logs", ""),
+            logs=session.logs,
         )
     except SandboxExecutionError as exc:
         logger.error("Recompilation failed: %s", exc, exc_info=True)

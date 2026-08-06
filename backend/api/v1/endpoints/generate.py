@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import Callable
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -13,6 +14,12 @@ from backend.services.session import SessionManager
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/generate", tags=["generate"])
+
+
+def _make_on_error_callback(llm: LLMPipeline) -> Callable[[str, str], str]:
+    def on_error(error_logs: str, code: str) -> str:
+        return llm.repair_code(error_logs, code)
+    return on_error
 
 
 @router.post("/", response_model=GenerateResponse)
@@ -40,7 +47,14 @@ async def generate(request: GenerateRequest, http_request: Request) -> GenerateR
         session.parameters = request.parameters or {}
         session.parameter_schemas = param_schemas
 
-        result = sandbox.execute(code, request.parameters or {}, session_id=session.session_id)
+        on_error = _make_on_error_callback(llm)
+        result = sandbox.execute(
+            code,
+            request.parameters or {},
+            session_id=session.session_id,
+            on_error=on_error,
+            max_retries=3,
+        )
 
         base_url = str(http_request.base_url).rstrip("/")
         session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if result.get("step_path") and os.path.exists(result.get("step_path", "")) else ""
@@ -48,13 +62,17 @@ async def generate(request: GenerateRequest, http_request: Request) -> GenerateR
         session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if result.get("gltf_path") and os.path.exists(result.get("gltf_path", "")) else ""
         session.logs = result.get("logs", "")
 
+        retry_count = result.get("retry_count", 0)
+        if retry_count > 0:
+            session.logs = f"[Auto-fix retries: {retry_count}]\n{session.logs}"
+
         return GenerateResponse(
             step_url=session.step_url,
             stl_url=session.stl_url,
             gltf_url=session.gltf_url,
             parameters=param_schemas,
             code=code,
-            logs=result.get("logs", ""),
+            logs=session.logs,
         )
     except SandboxExecutionError as exc:
         logger.error("Sandbox execution failed: %s", exc, exc_info=True)
