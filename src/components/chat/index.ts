@@ -1,1 +1,6 @@
 export { ChatSidebar } from "./ChatSidebar"
+export { MessageList } from "./MessageList"
+export { PromptInput } from "./PromptInput"
+export { RevisionHistory } from "./RevisionHistory"
+export { AutoFixIndicator } from "./AutoFixIndicator"
+export type { Message, MessageRole, PromptPreset, Revision, AutoFixState, AutoFixStatus, AutoFixLog } from "./types"
