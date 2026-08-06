@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from backend.models.schemas import RecompileRequest, RecompileResponse, ParameterSchema
 from backend.services.llm_pipeline import substitute_parameters
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/recompile", tags=["recompile"])
 
 
 @router.post("/", response_model=RecompileResponse)
-async def recompile(request: RecompileRequest) -> RecompileResponse:
+async def recompile(request: RecompileRequest, http_request: Request) -> RecompileResponse:
     try:
         session = SessionManager.get_last()
         if session is None:
@@ -41,14 +42,16 @@ async def recompile(request: RecompileRequest) -> RecompileResponse:
             ))
 
         sandbox = CadQuerySandbox()
-        result = sandbox.execute(code, request.parameters)
+        result = sandbox.execute(code, request.parameters, session_id=session.session_id)
 
         session.code = code
         session.parameters = request.parameters
         session.parameter_schemas = [p.model_dump() for p in param_schemas]
-        session.step_url = result.get("step_path", "")
-        session.stl_url = result.get("stl_path", "")
-        session.gltf_url = result.get("gltf_path", "")
+
+        base_url = str(http_request.base_url).rstrip("/")
+        session.step_url = f"{base_url}/outputs/{session.session_id}/output.step" if result.get("step_path") and os.path.exists(result.get("step_path", "")) else ""
+        session.stl_url = f"{base_url}/outputs/{session.session_id}/output.stl" if result.get("stl_path") and os.path.exists(result.get("stl_path", "")) else ""
+        session.gltf_url = f"{base_url}/outputs/{session.session_id}/output.gltf" if result.get("gltf_path") and os.path.exists(result.get("gltf_path", "")) else ""
         session.logs = result.get("logs", "")
 
         return RecompileResponse(
