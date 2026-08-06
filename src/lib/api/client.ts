@@ -1,7 +1,7 @@
 import { APIError } from "@/lib/types"
 
 export class ApiService {
-  private baseUrl: string
+  protected baseUrl: string
 
   constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000") {
     this.baseUrl = baseUrl
@@ -23,7 +23,7 @@ export class ApiService {
     return response.blob()
   }
 
-  private async request(path: string, method: string, body?: any): Promise<any> {
+  protected async request(path: string, method: string, body?: any): Promise<any> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method,
       headers: { "Content-Type": "application/json" },
