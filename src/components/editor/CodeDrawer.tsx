@@ -1,10 +1,18 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { X, Code2 } from "lucide-react"
 import { MonacoWrapper } from "./MonacoWrapper"
 import { extractVariables, updateVariableInCode, type CodeVariable } from "./LiveSync"
 import { apiService } from "@/lib/api/client"
+
+interface RecompileResult {
+  code: string
+  gltfUrl: string
+  stlUrl: string
+  stepUrl: string
+  logs: string
+}
 
 interface CodeDrawerProps {
   isOpen: boolean
@@ -13,6 +21,7 @@ interface CodeDrawerProps {
   onCodeChange: (code: string) => void
   onVariablesExtracted?: (variables: CodeVariable[]) => void
   onVariableUpdate?: (name: string, value: number) => void
+  onRecompileSuccess?: (result: RecompileResult) => void
   readOnly?: boolean
 }
 
@@ -23,11 +32,14 @@ export function CodeDrawer({
   onCodeChange,
   onVariablesExtracted,
   onVariableUpdate,
+  onRecompileSuccess,
   readOnly = true,
 }: CodeDrawerProps) {
   const [internalCode, setInternalCode] = useState(code)
   const [isEditing, setIsEditing] = useState(false)
   const [isRecompiling, setIsRecompiling] = useState(false)
+  const [recompileError, setRecompileError] = useState<string | null>(null)
+  const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     setInternalCode(code)
@@ -39,6 +51,38 @@ export function CodeDrawer({
       onVariablesExtracted?.(variables)
     }
   }, [isOpen, code, onVariablesExtracted])
+
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+    }
+  }, [])
+
+  const doRecompile = useCallback(
+    async (targetCode: string) => {
+      const variables = extractVariables(targetCode)
+      if (variables.length === 0) return
+
+      const parameters: Record<string, number> = {}
+      for (const v of variables) {
+        parameters[v.name] = v.value
+      }
+      const result = await apiService.recompile(parameters)
+      setInternalCode(result.code)
+      onCodeChange(result.code)
+      onRecompileSuccess?.({
+        code: result.code,
+        gltfUrl: result.gltf_url,
+        stlUrl: result.stl_url,
+        stepUrl: result.step_url,
+        logs: result.logs,
+      })
+      return result
+    },
+    [onCodeChange, onRecompileSuccess],
+  )
 
   const handleEditorChange = useCallback(
     (value: string | undefined) => {
@@ -62,27 +106,36 @@ export function CodeDrawer({
       setInternalCode(updatedCode)
       onCodeChange(updatedCode)
       onVariableUpdate?.(name, value)
+
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current)
+      }
+      debounceRef.current = setTimeout(async () => {
+        setIsRecompiling(true)
+        setRecompileError(null)
+        try {
+          await doRecompile(updatedCode)
+        } catch (err) {
+          setRecompileError(err instanceof Error ? err.message : "Recompile failed")
+        } finally {
+          setIsRecompiling(false)
+        }
+      }, 500)
     },
-    [internalCode, onCodeChange, onVariableUpdate],
+    [internalCode, onCodeChange, onVariableUpdate, doRecompile],
   )
 
   const handleRecompile = useCallback(async () => {
-    const variables = extractVariables(internalCode)
-    if (variables.length === 0) return
-
     setIsRecompiling(true)
+    setRecompileError(null)
     try {
-      const parameters: Record<string, number> = {}
-      for (const v of variables) {
-        parameters[v.name] = v.value
-      }
-      await apiService.recompile(parameters)
-    } catch {
-      // error handled by parent
+      await doRecompile(internalCode)
+    } catch (err) {
+      setRecompileError(err instanceof Error ? err.message : "Recompile failed")
     } finally {
       setIsRecompiling(false)
     }
-  }, [internalCode])
+  }, [internalCode, doRecompile])
 
   if (!isOpen) return null
 
@@ -120,6 +173,12 @@ export function CodeDrawer({
             </button>
           </div>
         </div>
+
+        {recompileError && (
+          <div className="px-4 py-2 bg-red-900/50 border-b border-red-700 text-xs text-red-300">
+            {recompileError}
+          </div>
+        )}
 
         <div className="flex-1 overflow-hidden">
           <MonacoWrapper

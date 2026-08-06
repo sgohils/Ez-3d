@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { apiService, ApiService } from "@/lib/api/client"
+import { apiService } from "@/lib/api/client"
 
 export function useApi() {
   const [loading, setLoading] = useState(false)
@@ -19,5 +19,19 @@ export function useApi() {
     }
   }
 
-  return { generate, loading, error }
+  const recompile = async (parameters: Record<string, number>) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await apiService.recompile(parameters)
+      return result
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unknown error")
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { generate, recompile, loading, error }
 }

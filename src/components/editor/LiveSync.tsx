@@ -135,12 +135,11 @@ export function updateVariableInCode(code: string, name: string, newValue: numbe
   const lines = code.split("\n")
   const updatedLines = lines.map((line) => {
     const assignmentMatch = line.match(
-      new RegExp(`^\\s*(${escapeRegex(name)})\\s*[:=]\\s*([+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?)`),
+      new RegExp(`^(\\s*${escapeRegex(name)}\\s*(?::\\s*[^=]+)?\\s*=\\s*)([+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?)(.*)$`)
     )
     if (assignmentMatch) {
-      const indent = line.match(/^\s*/)?.[0] || ""
-      const rest = line.slice(assignmentMatch[0].length).trim()
-      return `${indent}${name} = ${formatNumber(newValue)}${rest ? "  # " + rest : ""}`
+      const [, prefix, , suffix] = assignmentMatch
+      return `${prefix}${formatNumber(newValue)}${suffix}`
     }
     return line
   })
