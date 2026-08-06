@@ -69,7 +69,7 @@ export const ClippingPlane: FC<ClippingPlaneProps> = ({
 
   useEffect(() => {
     updateOrientation()
-  })
+  }, [normalVec, position])
 
   const projectOntoPlane = (clientX: number, clientY: number): THREE.Vector3 | null => {
     const rect = domElement.getBoundingClientRect()
@@ -110,7 +110,6 @@ export const ClippingPlane: FC<ClippingPlaneProps> = ({
     <mesh
       ref={meshRef}
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerDown}
       onPointerUp={() => {
         draggingRef.current.active = false
       }}

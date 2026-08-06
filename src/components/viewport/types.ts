@@ -33,7 +33,7 @@ export interface DisplayModeApplierProps {
   overhangAngle: number
   overhangAxis?: Vector3
   modelRef: React.RefObject<Object3D>
-  clipPlanes: Plane[]
+  clipPlane: Plane | null
 }
 
 export interface ClippingPlaneProps {
