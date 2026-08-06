@@ -60,7 +60,31 @@ function LoadingFallback() {
   )
 }
 
-export function CADViewport({ modelUrl, wireframe, autoRotate }: { modelUrl?: string; wireframe?: boolean; autoRotate?: boolean }) {
+export function CADViewport({
+  modelUrl,
+  wireframe,
+  autoRotate,
+  displayMode,
+  lighting,
+  showGrid,
+  showAxes,
+  showStats,
+  showEnvironment,
+  enableClipping,
+  enableDamping,
+}: {
+  modelUrl?: string
+  wireframe?: boolean
+  autoRotate?: boolean
+  displayMode?: string
+  lighting?: string
+  showGrid?: boolean
+  showAxes?: boolean
+  showStats?: boolean
+  showEnvironment?: boolean
+  enableClipping?: boolean
+  enableDamping?: boolean
+}) {
   const ext = modelUrl?.split(".").pop()?.toLowerCase()
   const isStep = ext === "step" || ext === "stp"
 

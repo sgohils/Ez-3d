@@ -18,6 +18,7 @@ router = APIRouter(prefix="/export", tags=["export"])
 async def export_model(
     export_format: str = Query(..., pattern="^(step|stl|gltf)$"),
     session_id: str | None = Query(None),
+    tolerance: float = Query(0.01, ge=1e-6, le=1.0),
 ) -> StreamingResponse:
     try:
         pipeline = ExportPipeline()
@@ -32,6 +33,7 @@ async def export_model(
             session_id=session_id or "",
             format=export_format,
             parameter_overrides=overrides if overrides else None,
+            tolerance=tolerance,
         )
 
         file_path = result["file_path"]
