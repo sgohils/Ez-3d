@@ -70,5 +70,7 @@ cq.exporters.export(result, "output.step")
 cq.exporters.export(result, "output.stl")
 # GLTF: glTF 2.0 export for Three.js compatibility
 cq.exporters.export(result, "output.gltf")
+# SCAD: OpenSCAD script export for parametric design
+cq.exporters.export(result, "output.scad")
 '''
         return script

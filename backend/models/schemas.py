@@ -41,7 +41,7 @@ class RecompileResponse(BaseModel):
 
 
 class ExportRequest(BaseModel):
-    format: str = Field(..., pattern="^(step|stl|gltf)$")
+    format: str = Field(..., pattern="^(step|stl|gltf|f3d|scad)$")
 
 
 class ExportResponse(BaseModel):

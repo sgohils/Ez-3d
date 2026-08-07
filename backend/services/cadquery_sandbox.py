@@ -69,11 +69,13 @@ class CadQuerySandbox:
             step_path = os.path.join(output_dir, "output.step")
             stl_path = os.path.join(output_dir, "output.stl")
             gltf_path = os.path.join(output_dir, "output.gltf")
+            scad_path = os.path.join(output_dir, "output.scad")
 
             return {
                 "step_path": step_path if os.path.exists(step_path) else "",
                 "stl_path": stl_path if os.path.exists(stl_path) else "",
                 "gltf_path": gltf_path if os.path.exists(gltf_path) else "",
+                "scad_path": scad_path if os.path.exists(scad_path) else "",
                 "logs": logs,
                 "working_dir": output_dir,
             }
@@ -123,6 +125,7 @@ class CadQuerySandbox:
             "step_path": result.get("step_path", ""),
             "stl_path": result.get("stl_path", ""),
             "gltf_path": result.get("gltf_path", ""),
+            "scad_path": result.get("scad_path", ""),
             "logs": result.get("logs", ""),
             "working_dir": result.get("working_dir", ""),
         }
