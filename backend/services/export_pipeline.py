@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import shlex
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -85,13 +86,13 @@ class ExportPipeline:
                 "Install FreeCAD or use an alternative format (STEP, STL, GLTF, SCAD)."
             )
 
-        f3d_path = step_path.replace(".step", ".f3d")
+        f3d_path = os.path.splitext(step_path)[0] + ".f3d"
         conversion_script = (
             "import FreeCAD, Import, Mesh, Part, BRep; "
             "doc = FreeCAD.newDocument(); "
-            f"shape = Import.read('{step_path}'); "
+            f"shape = Import.read({shlex.quote(step_path)}); "
             "Part.show(shape); "
-            f"doc.saveAs('{f3d_path}'); "
+            f"doc.saveAs({shlex.quote(f3d_path)}); "
             "FreeCAD.closeDocument(doc.Name)"
         )
         try:
