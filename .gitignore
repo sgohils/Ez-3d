@@ -26,3 +26,8 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 tsconfig.tsbuildinfo
+
+# Python
+__pycache__
+*.pyc
+*.pyo
