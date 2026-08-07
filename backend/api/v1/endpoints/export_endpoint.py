@@ -16,7 +16,7 @@ router = APIRouter(prefix="/export", tags=["export"])
 
 @router.post("/")
 async def export_model(
-    export_format: str = Query(..., pattern="^(step|stl|gltf)$"),
+    export_format: str = Query(..., pattern="^(step|stl|gltf|f3d|scad)$"),
     session_id: str | None = Query(None),
     tolerance: float = Query(0.01, ge=1e-6, le=1.0),
 ) -> StreamingResponse:
