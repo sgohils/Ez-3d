@@ -41,7 +41,7 @@ class ExportPipeline:
 
         result = sandbox.execute(
             code,
-            parameter_overrides,
+            None,
             session_id=session_id or session.session_id,
             export_options=export_options,
         )
