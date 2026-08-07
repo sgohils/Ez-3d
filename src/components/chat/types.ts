@@ -38,5 +38,6 @@ export interface AutoFixState {
   logs: AutoFixLog[]
   currentIteration: number
   totalIterations: number
+  maxRetries: number
   lastError?: string
 }

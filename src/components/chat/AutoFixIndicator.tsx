@@ -56,9 +56,9 @@ export function AutoFixIndicator({ state }: AutoFixIndicatorProps) {
             {statusLabel}
           </span>
         </div>
-        {state.totalIterations > 0 && (
+        {(state.totalIterations > 0 || state.maxRetries > 0) && (
           <span className="text-xs text-gray-400">
-            {state.currentIteration}/{state.totalIterations}
+            {state.currentIteration}/{state.maxRetries} retries
           </span>
         )}
       </div>
