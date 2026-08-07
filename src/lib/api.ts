@@ -18,6 +18,10 @@ export interface GenerateResponse {
   logs: string
   message?: string
   revisionId?: string
+  retryCount?: number
+  maxRetries?: number
+  errorType?: string | null
+  repairHints?: string[] | null
 }
 
 export interface RecompileResponse {

@@ -47,6 +47,7 @@ const initialState: AppState = {
     logs: [],
     currentIteration: 0,
     totalIterations: 0,
+    maxRetries: 3,
   },
   errors: [],
 }
@@ -117,6 +118,29 @@ export function AppProvider({ children }: AppProviderProps) {
         codePreview: result.code.slice(0, 500) + (result.code.length > 500 ? "..." : ""),
       }
 
+      const retryCount = result.retryCount ?? 0
+      const maxRetries = result.maxRetries ?? 3
+      const errorType = result.errorType
+      const repairHints = result.repairHints ?? []
+
+      const autofixLogs: { id: string; timestamp: Date; level: "info" | "warning" | "error" | "debug"; message: string }[] = []
+      if (retryCount > 0) {
+        autofixLogs.push({
+          id: `autofix-${Date.now()}`,
+          timestamp: new Date(),
+          level: errorType ? "warning" : "info",
+          message: `Auto-repair succeeded after ${retryCount} iteration(s)${errorType ? ` (${errorType})` : ""}.`,
+        })
+        if (repairHints.length > 0) {
+          autofixLogs.push({
+            id: `autofix-hints-${Date.now()}`,
+            timestamp: new Date(),
+            level: "info",
+            message: `Targeted hints: ${repairHints.join("; ")}`,
+          })
+        }
+      }
+
       setState((prev) => ({
         ...prev,
         modelUrl: result.gltf_url,
@@ -136,6 +160,14 @@ export function AppProvider({ children }: AppProviderProps) {
               },
             ]
           : prev.revisions,
+        autoFixState: {
+          status: retryCount > 0 ? "complete" : "idle",
+          logs: autofixLogs,
+          currentIteration: retryCount,
+          totalIterations: retryCount,
+          maxRetries,
+          lastError: errorType || undefined,
+        },
       }))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to generate model"

@@ -74,7 +74,7 @@ interface ChatSidebarProps {
 export function ChatSidebar({
   initialMessages = [],
   presets = DEFAULT_PRESETS,
-  autoFixState = { status: "idle", logs: [], currentIteration: 0, totalIterations: 0 },
+  autoFixState = { status: "idle", logs: [], currentIteration: 0, totalIterations: 0, maxRetries: 3 },
   revisions = [],
   onSendPrompt,
   onSelectRevision,

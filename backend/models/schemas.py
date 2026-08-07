@@ -19,6 +19,10 @@ class GenerateResponse(BaseModel):
     logs: str
     message: Optional[str] = None
     revision_id: Optional[str] = Field(None, alias="revisionId")
+    retry_count: int = 0
+    max_retries: int = 3
+    error_type: Optional[str] = None
+    repair_hints: Optional[list[str]] = None
 
 
 class ParameterSchema(BaseModel):
