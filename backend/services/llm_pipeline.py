@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import os
 import re
 from typing import Any
@@ -42,19 +43,115 @@ cq.exporters.export(result, "output.gltf")
 """
 
 
+TYPE_ANNOTATION_PATTERN = re.compile(
+    r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*(?:float|int|Decimal)\s*=\s*"
+    r"([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*(?:(#[^\n]*))?$",
+    re.MULTILINE,
+)
+
+VARIABLE_PATTERN = re.compile(
+    r"^\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*"
+    r"([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*(?:(#[^\n]*))?$",
+    re.MULTILINE,
+)
+
+SLIDER_ANNOTATION_PATTERN = re.compile(
+    r"\[\s*slider\s*:\s*([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*-\s*"
+    r"([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*step\s*:\s*"
+    r"([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*\]",
+    re.IGNORECASE,
+)
+
+
+def infer_range(name: str, value: float) -> dict[str, float]:
+    abs_value = abs(value)
+
+    if abs_value == 0:
+        return {"min": 0, "max": 100, "step": 1}
+
+    if abs_value >= 1000:
+        min_val = 0
+        max_val = math.ceil(abs_value * 2 / 1000) * 1000
+        step = max(1, math.floor(max_val / 100))
+    elif abs_value >= 100:
+        min_val = 0
+        max_val = math.ceil(abs_value * 2 / 100) * 100
+        step = max(1, math.floor(max_val / 100))
+    elif abs_value >= 10:
+        min_val = 0
+        max_val = math.ceil(abs_value * 2 / 10) * 10
+        step = max(0.1, math.floor(max_val / 100) / 10)
+    elif abs_value >= 1:
+        min_val = 0
+        max_val = math.ceil(abs_value * 2)
+        step = 0.1
+    else:
+        min_val = 0
+        max_val = math.ceil(abs_value * 2 * 10) / 10
+        step = 0.01
+
+    lower_name = name.lower()
+    if "angle" in lower_name or "deg" in lower_name:
+        min_val = 0
+        max_val = 360
+        step = 1
+    elif "radius" in lower_name or "diameter" in lower_name:
+        min_val = 0
+        max_val = math.ceil(abs_value * 3)
+        step = 0.1
+    elif "height" in lower_name or "length" in lower_name:
+        min_val = 0
+        max_val = math.ceil(abs_value * 3)
+        step = 0.1
+    elif "thick" in lower_name or "width" in lower_name:
+        min_val = 0
+        max_val = math.ceil(abs_value * 3)
+        step = 0.1
+    elif "hole" in lower_name or "count" in lower_name:
+        min_val = 1
+        max_val = max(100, math.ceil(abs_value * 3))
+        step = 1
+
+    if value < 0:
+        tmp = min_val
+        min_val = -max_val
+        max_val = -tmp
+
+    step = float(f"{step:.10f}")
+
+    return {"min": min_val, "max": max_val, "step": step}
+
+
 def extract_parameters(code: str) -> list[dict[str, Any]]:
-    param_patterns = [
-        r"(?:^|\n)\s*#\s*param:\s*(\w+)\s*=\s*([\d.]+)\s*,\s*min\s*=\s*([\d.]+)\s*,\s*max\s*=\s*([\d.]+)\s*,\s*step\s*=\s*([\d.]+)",
-        r"(?:^|\n)\s*#\s*param:\s*(\w+):\s*([\d.]+)\s*\[([\d.]+),?\s*([\d.]+),?\s*([\d.]+)\]",
-    ]
     parameters: list[dict[str, Any]] = []
-    for pattern in param_patterns:
-        for match in re.finditer(pattern, code, re.MULTILINE):
+    seen: set[str] = set()
+
+    for pattern in (TYPE_ANNOTATION_PATTERN, VARIABLE_PATTERN):
+        for match in pattern.finditer(code):
             name = match.group(1)
+            if name in seen:
+                continue
             value = float(match.group(2))
-            min_val = float(match.group(3))
-            max_val = float(match.group(4))
-            step = float(match.group(5))
+            comment = match.group(3)
+
+            min_val = None
+            max_val = None
+            step = None
+
+            if comment:
+                slider_match = SLIDER_ANNOTATION_PATTERN.search(comment)
+                if slider_match:
+                    min_val = float(slider_match.group(1))
+                    max_val = float(slider_match.group(2))
+                    step = float(slider_match.group(3))
+
+            if min_val is None:
+                range_info = infer_range(name, value)
+                min_val = range_info["min"]
+                max_val = range_info["max"]
+                step = range_info["step"]
+
+            seen.add(name)
             parameters.append({
                 "name": name,
                 "value": value,
@@ -62,14 +159,36 @@ def extract_parameters(code: str) -> list[dict[str, Any]]:
                 "max": max_val,
                 "step": step,
             })
+
     return parameters
 
 
 def substitute_parameters(code: str, parameters: dict[str, Any]) -> str:
-    result = code
-    for name, value in parameters.items():
-        result = re.sub(r'\b' + re.escape(name) + r'\b', str(value), result)
-    return result
+    lines = code.split("\n")
+    result_lines: list[str] = []
+    for line in lines:
+        replaced = False
+        for name, value in parameters.items():
+            match = re.match(
+                r"^\s*" + re.escape(name) + r"\s*(?::\s*(?:float|int|Decimal)\s*)?=\s*"
+                r"([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)",
+                line,
+            )
+            if match:
+                indent = line[: len(line) - len(line.lstrip())]
+                rest = line[match.end() :].strip()
+                if rest:
+                    if rest.startswith("#"):
+                        result_lines.append(f"{indent}{name} = {value}  {rest}")
+                    else:
+                        result_lines.append(f"{indent}{name} = {value}  # {rest}")
+                else:
+                    result_lines.append(f"{indent}{name} = {value}")
+                replaced = True
+                break
+        if not replaced:
+            result_lines.append(line)
+    return "\n".join(result_lines)
 
 
 def _extract_code_block(response_text: str) -> str:
