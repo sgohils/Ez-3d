@@ -20,7 +20,7 @@ class ExportPipeline:
     ) -> dict[str, Any]:
         self._logger.info("Exporting session %s as %s", session_id, format)
 
-        from backend.services.session import SessionManager
+        from services.session import SessionManager
 
         session = SessionManager.get(session_id)
         if session is None:
@@ -30,10 +30,10 @@ class ExportPipeline:
 
         code = session.code
         if parameter_overrides:
-            from backend.services.llm_pipeline import substitute_parameters
+            from services.llm_pipeline import substitute_parameters
             code = substitute_parameters(code, parameter_overrides)
 
-        from backend.services.cadquery_sandbox import CadQuerySandbox
+        from services.cadquery_sandbox import CadQuerySandbox
         sandbox = CadQuerySandbox()
         export_options: dict[str, Any] = {}
         if format == "stl":

@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
-from backend.services.export_pipeline import ExportPipeline
+from services.export_pipeline import ExportPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ async def export_model(
         pipeline = ExportPipeline()
         overrides: dict[str, Any] = {}
         if session_id:
-            from backend.services.session import SessionManager
+            from services.session import SessionManager
             session = SessionManager.get(session_id)
             if session and session.parameters:
                 overrides = session.parameters

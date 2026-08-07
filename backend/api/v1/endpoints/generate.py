@@ -5,10 +5,10 @@ import os
 
 from fastapi import APIRouter, HTTPException, Request
 
-from backend.models.schemas import GenerateRequest, GenerateResponse, ParameterSchema
-from backend.services.llm_pipeline import LLMPipeline, extract_parameters
-from backend.services.cadquery_sandbox import CadQuerySandbox, SandboxExecutionError
-from backend.services.session import SessionManager
+from models.schemas import GenerateRequest, GenerateResponse, ParameterSchema
+from services.llm_pipeline import LLMPipeline, extract_parameters
+from services.cadquery_sandbox import CadQuerySandbox, SandboxExecutionError
+from services.session import SessionManager
 
 logger = logging.getLogger(__name__)
 
