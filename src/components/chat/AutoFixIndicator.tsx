@@ -15,18 +15,18 @@ const levelIcons = {
 } as const
 
 const levelColors = {
-  info: "bg-blue-100 text-blue-800",
-  warning: "bg-yellow-100 text-yellow-800",
-  error: "bg-red-100 text-red-800",
-  debug: "bg-gray-100 text-gray-600",
+  info: "bg-blue-900/50 text-blue-300",
+  warning: "bg-yellow-900/50 text-yellow-300",
+  error: "bg-red-900/50 text-red-300",
+  debug: "bg-gray-800 text-gray-400",
 } as const
 
 export function AutoFixIndicator({ state }: AutoFixIndicatorProps) {
   const statusIcon = {
     idle: <Wrench className="w-4 h-4 text-gray-400" />,
-    running: <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />,
-    complete: <CheckCircle2 className="w-4 h-4 text-green-500" />,
-    error: <XCircle className="w-4 h-4 text-red-500" />,
+    running: <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />,
+    complete: <CheckCircle2 className="w-4 h-4 text-green-400" />,
+    error: <XCircle className="w-4 h-4 text-red-400" />,
   }[state.status]
 
   const statusLabel = {
@@ -37,20 +37,20 @@ export function AutoFixIndicator({ state }: AutoFixIndicatorProps) {
   }[state.status]
 
   return (
-    <div className="border-t border-gray-200 bg-white">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+    <div className="border-t border-gray-800 bg-gray-900">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800">
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-300">
           {statusIcon}
           <span>Auto-Fix</span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
               state.status === "running"
-                ? "bg-blue-100 text-blue-700"
+                ? "bg-blue-900/50 text-blue-300"
                 : state.status === "complete"
-                  ? "bg-green-100 text-green-700"
+                  ? "bg-green-900/50 text-green-300"
                   : state.status === "error"
-                    ? "bg-red-100 text-red-700"
-                    : "bg-gray-100 text-gray-600"
+                    ? "bg-red-900/50 text-red-300"
+                    : "bg-gray-800 text-gray-400"
             }`}
           >
             {statusLabel}
@@ -64,9 +64,9 @@ export function AutoFixIndicator({ state }: AutoFixIndicatorProps) {
       </div>
 
       {state.lastError && (
-        <div className="px-4 py-2 bg-red-50 border-b border-red-100 flex items-start gap-2">
+        <div className="px-4 py-2 bg-red-900/30 border-b border-red-800/50 flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-          <span className="text-xs text-red-700">{state.lastError}</span>
+          <span className="text-xs text-red-300">{state.lastError}</span>
         </div>
       )}
 
@@ -86,8 +86,8 @@ export function AutoFixIndicator({ state }: AutoFixIndicatorProps) {
               <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase ${levelColors[log.level]}`}>
                 {log.level}
               </span>
-              <span className="text-gray-600 font-mono">{log.message}</span>
-              <span className="text-gray-400 ml-auto shrink-0">
+              <span className="text-gray-300 font-mono">{log.message}</span>
+              <span className="text-gray-500 ml-auto shrink-0">
                 {log.timestamp.toLocaleTimeString()}
               </span>
             </div>
@@ -96,7 +96,7 @@ export function AutoFixIndicator({ state }: AutoFixIndicatorProps) {
       )}
 
       {state.status === "idle" && state.logs.length === 0 && (
-        <div className="px-4 py-3 text-xs text-gray-400 text-center">
+        <div className="px-4 py-3 text-xs text-gray-500 text-center">
           No diagnostic activity
         </div>
       )}

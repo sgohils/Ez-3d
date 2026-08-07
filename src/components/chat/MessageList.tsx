@@ -11,7 +11,7 @@ interface MessageListProps {
 export function MessageList({ messages }: MessageListProps) {
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+      <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
         <div className="text-center">
           <BotMessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p>No messages yet</p>
@@ -33,8 +33,8 @@ export function MessageList({ messages }: MessageListProps) {
               message.role === "user"
                 ? "bg-blue-600 text-white"
                 : message.role === "system"
-                  ? "bg-gray-200 text-gray-700"
-                  : "bg-gray-100 text-gray-900"
+                  ? "bg-gray-800 text-gray-300"
+                  : "bg-gray-800 text-gray-100"
             }`}
           >
             <div className="flex items-center gap-2 mb-1">
@@ -59,7 +59,7 @@ export function MessageList({ messages }: MessageListProps) {
             </div>
             <p className="whitespace-pre-wrap">{message.content}</p>
             {message.imageUrl && (
-              <div className="mt-2 rounded overflow-hidden border border-gray-200 relative">
+              <div className="mt-2 rounded overflow-hidden border border-gray-700 relative">
                 <Image
                   src={message.imageUrl}
                   alt="Generated model preview"
@@ -70,7 +70,7 @@ export function MessageList({ messages }: MessageListProps) {
               </div>
             )}
             {message.codePreview && (
-              <div className="mt-2 rounded bg-gray-900 border border-gray-700 overflow-hidden">
+              <div className="mt-2 rounded bg-gray-950 border border-gray-700 overflow-hidden">
                 <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-gray-700">
                   <Code2 className="w-3 h-3 text-gray-400" />
                   <span className="text-[10px] text-gray-400 font-medium uppercase">

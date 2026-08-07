@@ -109,16 +109,16 @@ export function ChatSidebar({
   }, [onClearRevisions])
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-        <h2 className="text-sm font-semibold text-gray-900">Chat</h2>
+    <div className="flex flex-col h-full bg-gray-900 border-r border-gray-800">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
+        <h2 className="text-sm font-semibold text-gray-100">Chat</h2>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setActiveTab("chat")}
             className={`px-2 py-1 text-xs rounded transition-colors ${
               activeTab === "chat"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-400 hover:text-gray-600"
+                ? "bg-gray-700 text-gray-100"
+                : "text-gray-400 hover:text-gray-200"
             }`}
           >
             Chat
@@ -127,8 +127,8 @@ export function ChatSidebar({
             onClick={() => setActiveTab("revisions")}
             className={`px-2 py-1 text-xs rounded transition-colors ${
               activeTab === "revisions"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-400 hover:text-gray-600"
+                ? "bg-gray-700 text-gray-100"
+                : "text-gray-400 hover:text-gray-200"
             }`}
           >
             Revisions
@@ -137,8 +137,8 @@ export function ChatSidebar({
             onClick={() => setActiveTab("autofix")}
             className={`px-2 py-1 text-xs rounded transition-colors ${
               activeTab === "autofix"
-                ? "bg-blue-100 text-blue-700"
-                : "text-gray-400 hover:text-gray-600"
+                ? "bg-gray-700 text-gray-100"
+                : "text-gray-400 hover:text-gray-200"
             }`}
           >
             Auto-Fix
