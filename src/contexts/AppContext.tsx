@@ -52,7 +52,7 @@ const initialState: AppState = {
   errors: [],
 }
 
-const AppContext = createContext<AppContextValue | null>(null)
+export const AppContext = createContext<AppContextValue | null>(null)
 
 export function useApp() {
   const context = useContext(AppContext)

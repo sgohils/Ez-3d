@@ -65,6 +65,8 @@ export function extractVariables(code: string): CodeVariable[] {
   return variables.sort((a, b) => a.line - b.line)
 }
 
+export { inferRange }
+
 function inferRange(name: string, value: number): { min: number; max: number; step: number } {
   const absValue = Math.abs(value)
 
