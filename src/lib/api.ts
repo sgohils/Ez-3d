@@ -39,12 +39,11 @@ class AppApiService extends ApiService {
   }
 
   async exportModel(format: "step" | "stl" | "gltf", tolerance?: number): Promise<Blob> {
-    const url = new URL(`${this.baseUrl}/api/v1/export`)
-    url.searchParams.set("format", format)
+    let url = `${this.baseUrl}/api/v1/export?format=${format}`
     if (tolerance !== undefined) {
-      url.searchParams.set("tolerance", String(tolerance))
+      url += `&tolerance=${tolerance}`
     }
-    const response = await fetch(url.toString())
+    const response = await fetch(url)
     if (!response.ok) {
       const text = await response.text().catch(() => "Export failed")
       throw new APIError("Export failed", response.status, text)

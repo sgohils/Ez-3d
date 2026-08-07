@@ -1,4 +1,4 @@
-export { CADViewport, ViewportScene } from "./Scene"
+export { CADViewport } from "./Scene"
 export {
   ModelLoader,
   ErrorBoundary,

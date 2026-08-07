@@ -6,7 +6,11 @@ import { GlobalErrorBoundary } from "@/components/GlobalErrorBoundary"
 import { ChatSidebar } from "@/components/chat/ChatSidebar"
 import { ParametricPanel } from "@/components/controls/ParametricPanel"
 import { CodeDrawer } from "@/components/editor/CodeDrawer"
-import { CADViewport } from "@/components/viewport/Scene"
+import {
+  CADViewport,
+  DisplayModes,
+  type DisplayMode,
+} from "@/components/viewport"
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner"
 import { ToastContainer, type Toast } from "@/components/ui/Toast"
 import { appApi } from "@/lib/api"
@@ -38,6 +42,12 @@ function AppLayout() {
   const [codeDrawerOpen, setCodeDrawerOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [showRightPanel, setShowRightPanel] = useState(true)
+
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("shaded")
+  const [overhangAngle, setOverhangAngle] = useState(45)
+  const [enableClipping, setEnableClipping] = useState(false)
+  const [clipNormal, setClipNormal] = useState<[number, number, number]>([0, 1, 0])
+  const [clipPosition, setClipPosition] = useState(0)
 
   const handleExport = async (format: "step" | "stl" | "gltf") => {
     if (!modelUrl) return
@@ -146,16 +156,33 @@ function AppLayout() {
           )}
           <CADViewport
             modelUrl={modelUrl ?? undefined}
-            displayMode="shaded"
+            displayMode={displayMode}
             lighting="warehouse"
             showGrid={true}
             showAxes={true}
             showStats={false}
             showEnvironment={true}
-            enableClipping={false}
+            enableClipping={enableClipping}
+            overhangAngle={overhangAngle}
+            clipNormal={clipNormal}
+            clipPosition={clipPosition}
             autoRotate={false}
             enableDamping={true}
           />
+          <div className="absolute bottom-4 left-4 z-10">
+            <DisplayModes
+              mode={displayMode}
+              onModeChange={setDisplayMode}
+              overhangAngle={overhangAngle}
+              onOverhangAngleChange={setOverhangAngle}
+              clippingEnabled={enableClipping}
+              onClippingChange={setEnableClipping}
+              clipPosition={clipPosition}
+              onClipPositionChange={setClipPosition}
+              clipNormal={clipNormal}
+              onClipNormalChange={setClipNormal}
+            />
+          </div>
         </div>
       </div>
 
